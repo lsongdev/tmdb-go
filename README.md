@@ -29,7 +29,9 @@ english := client.WithLanguage("en-US")
 ```
 
 Available calls: `SearchMovies`, `Movie`, `MovieCredits`, `SearchTV`, `TV`,
-`Season`, `Episode`, `TVCredits`.
+`Season`, `Episode`, `TVCredits`. `Movie` and `TV` include alternative titles
+(romanizations, regional and former titles) in the same request; use
+`AlternativeTitles.All()` to read them for either type.
 
 ## Caching
 

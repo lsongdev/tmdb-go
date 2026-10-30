@@ -45,7 +45,12 @@ func server(t *testing.T, hits *atomic.Int32) *httptest.Server {
 			time.Sleep(20 * time.Millisecond) // let concurrent callers pile up
 			w.Write([]byte(`{"page":1,"total_results":1,"results":[{"id":438631,"title":"沙丘","original_title":"Dune","release_date":"2021-09-15"}]}`))
 		case r.URL.Path == "/movie/438631":
-			w.Write([]byte(`{"id":438631,"title":"Dune","runtime":155,"genres":[{"id":878,"name":"Science Fiction"}]}`))
+			if q.Get("append_to_response") != "alternative_titles" {
+				t.Errorf("movie query = %s", r.URL.RawQuery)
+			}
+			w.Write([]byte(`{"id":438631,"title":"Dune","runtime":155,"genres":[{"id":878,"name":"Science Fiction"}],"alternative_titles":{"titles":[{"iso_3166_1":"US","title":"Dune: Part One","type":""}]}}`))
+		case r.URL.Path == "/tv/86831":
+			w.Write([]byte(`{"id":86831,"name":"Love, Death & Robots","alternative_titles":{"results":[{"iso_3166_1":"US","title":"Love, Death and Robots","type":""}]}}`))
 		case r.URL.Path == "/tv/1399/season/1":
 			w.Write([]byte(`{"season_number":1,"episodes":[{"episode_number":1,"name":"Winter Is Coming","still_path":"/s.jpg"}]}`))
 		case r.URL.Path == "/tv/1":
@@ -96,8 +101,12 @@ func TestClient(t *testing.T) {
 	}
 
 	movie, err := c.WithLanguage("en-US").Movie(ctx, 438631)
-	if err != nil || movie.Runtime != 155 || movie.Genres[0].Name != "Science Fiction" {
+	if err != nil || movie.Runtime != 155 || movie.Genres[0].Name != "Science Fiction" || movie.AlternativeTitles.All()[0].Title != "Dune: Part One" {
 		t.Fatalf("movie = %+v, %v", movie, err)
+	}
+	show, err := c.TV(ctx, 86831)
+	if err != nil || len(show.AlternativeTitles.All()) != 1 || show.AlternativeTitles.All()[0].Title != "Love, Death and Robots" {
+		t.Fatalf("show = %+v, %v", show, err)
 	}
 	season, err := c.Season(ctx, 1399, 1)
 	if err != nil || season.Episodes[0].Name != "Winter Is Coming" {

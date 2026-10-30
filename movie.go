@@ -60,6 +60,30 @@ type Movie struct {
 		PosterPath   string `json:"poster_path"`
 		BackdropPath string `json:"backdrop_path"`
 	} `json:"belongs_to_collection,omitempty"`
+	AlternativeTitles *AlternativeTitles `json:"alternative_titles,omitempty"`
+}
+
+// AlternativeTitle is another known title, e.g. a romanization, a regional
+// release title or a former English title.
+type AlternativeTitle struct {
+	Country string `json:"iso_3166_1"`
+	Title   string `json:"title"`
+	Type    string `json:"type"`
+}
+
+// AlternativeTitles is included with movie and show details. Movies list
+// them as titles, shows as results.
+type AlternativeTitles struct {
+	Titles  []AlternativeTitle `json:"titles,omitempty"`
+	Results []AlternativeTitle `json:"results,omitempty"`
+}
+
+// All returns the titles regardless of which endpoint filled them.
+func (a *AlternativeTitles) All() []AlternativeTitle {
+	if a == nil {
+		return nil
+	}
+	return append(append([]AlternativeTitle(nil), a.Titles...), a.Results...)
 }
 
 // Year is the release year, or 0 when unknown.
@@ -93,9 +117,9 @@ func (c *Client) SearchMovies(ctx context.Context, query string, opts *SearchOpt
 	return fetch[Page[Movie]](ctx, c, "/search/movie", opts.values(query, "year"))
 }
 
-// Movie fetches a movie's details.
+// Movie fetches a movie's details, including its alternative titles.
 func (c *Client) Movie(ctx context.Context, id int) (*Movie, error) {
-	return fetch[Movie](ctx, c, fmt.Sprintf("/movie/%d", id), nil)
+	return fetch[Movie](ctx, c, fmt.Sprintf("/movie/%d", id), url.Values{"append_to_response": {"alternative_titles"}})
 }
 
 type Person struct {

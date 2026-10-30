@@ -3,6 +3,7 @@ package tmdb
 import (
 	"context"
 	"fmt"
+	"net/url"
 )
 
 // TV is a search result or, with the detail fields filled, a show fetched
@@ -37,6 +38,8 @@ type TV struct {
 	Networks         []Company `json:"networks,omitempty"`
 	CreatedBy        []Person  `json:"created_by,omitempty"`
 	Seasons          []Season  `json:"seasons,omitempty"`
+
+	AlternativeTitles *AlternativeTitles `json:"alternative_titles,omitempty"`
 }
 
 // Year is the first air year, or 0 when unknown.
@@ -76,9 +79,9 @@ func (c *Client) SearchTV(ctx context.Context, query string, opts *SearchOptions
 	return fetch[Page[TV]](ctx, c, "/search/tv", opts.values(query, "first_air_date_year"))
 }
 
-// TV fetches a show's details, including its list of seasons.
+// TV fetches a show's details, including its seasons and alternative titles.
 func (c *Client) TV(ctx context.Context, id int) (*TV, error) {
-	return fetch[TV](ctx, c, fmt.Sprintf("/tv/%d", id), nil)
+	return fetch[TV](ctx, c, fmt.Sprintf("/tv/%d", id), url.Values{"append_to_response": {"alternative_titles"}})
 }
 
 // Season fetches a season with all of its episodes in one request.
